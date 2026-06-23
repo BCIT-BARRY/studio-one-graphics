@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { updateRequestStatus } from '@/app/actions/appointments';
+import { sendDepositLink } from '@/app/actions/stripe';
 import type { AppointmentRequestStatus } from '@/types';
 
 interface Request {
@@ -18,6 +19,10 @@ interface Request {
   notes: string;
   status: string;
   created_at: string;
+  estimate_cents: number | null;
+  deposit_cents: number | null;
+  stripe_payment_link_url: string | null;
+  payment_status: string;
 }
 
 const statuses: ('All' | AppointmentRequestStatus)[] = ['All', 'New', 'Contacted', 'Awaiting Confirmation', 'Confirmed', 'Archived'];
@@ -27,6 +32,9 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [estimate, setEstimate] = useState('');
+  const [depositResult, setDepositResult] = useState<{ url?: string; amount?: string; error?: string } | null>(null);
+  const [sendingDeposit, setSendingDeposit] = useState(false);
 
   const filtered = requests.filter((r) => {
     if (filter !== 'All' && r.status !== filter) return false;
@@ -41,6 +49,38 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
       await updateRequestStatus(id, status);
     });
   }
+
+  async function handleSendDeposit() {
+    if (!detail || !estimate) return;
+    setSendingDeposit(true);
+    setDepositResult(null);
+    const result = await sendDepositLink(detail.id, parseFloat(estimate));
+    if (result.error) {
+      setDepositResult({ error: result.error });
+    } else {
+      setDepositResult({ url: result.url, amount: result.depositAmount });
+    }
+    setSendingDeposit(false);
+  }
+
+  function formatCents(cents: number) {
+    return `$${(cents / 100).toFixed(2)}`;
+  }
+
+  const paymentBadge = (status: string) => {
+    const styles: Record<string, { bg: string; color: string; label: string }> = {
+      none: { bg: 'transparent', color: 'var(--color-ink-subtle)', label: 'No deposit' },
+      pending: { bg: 'rgba(234,179,8,0.15)', color: '#eab308', label: 'Deposit pending' },
+      paid: { bg: 'rgba(34,197,94,0.15)', color: '#22c55e', label: 'Deposit paid' },
+      refunded: { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', label: 'Refunded' },
+    };
+    const s = styles[status] || styles.none;
+    return (
+      <span className="text-[11px] font-medium px-2 py-0.5" style={{ background: s.bg, color: s.color, borderRadius: 'var(--radius-sm)' }}>
+        {s.label}
+      </span>
+    );
+  };
 
   return (
     <div>
@@ -113,13 +153,13 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
           <div
             className="hidden md:grid gap-4 text-[11px] font-semibold uppercase tracking-[1px]"
             style={{
-              gridTemplateColumns: '1fr 1.2fr 0.8fr 0.8fr 0.6fr',
+              gridTemplateColumns: '1fr 1.2fr 0.8fr 0.7fr 0.6fr 0.6fr',
               padding: '12px 20px',
               borderBottom: '1px solid var(--color-hairline)',
               color: 'var(--color-ink-subtle)',
             }}
           >
-            <span>Customer</span><span>Vehicle</span><span>Service</span><span>Status</span><span>Date</span>
+            <span>Customer</span><span>Vehicle</span><span>Service</span><span>Status</span><span>Deposit</span><span>Date</span>
           </div>
 
           {filtered.length === 0 ? (
@@ -134,10 +174,10 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
             filtered.map((r) => (
               <div
                 key={r.id}
-                onClick={() => setSelectedId(r.id)}
+                onClick={() => { setSelectedId(r.id); setEstimate(r.estimate_cents ? (r.estimate_cents / 100).toString() : ''); setDepositResult(null); }}
                 className="grid gap-4 cursor-pointer transition-colors duration-100"
                 style={{
-                  gridTemplateColumns: '1fr 1.2fr 0.8fr 0.8fr 0.6fr',
+                  gridTemplateColumns: '1fr 1.2fr 0.8fr 0.7fr 0.6fr 0.6fr',
                   padding: '14px 20px',
                   borderBottom: '1px solid var(--color-hairline)',
                   background: selectedId === r.id ? 'var(--color-surface-2)' : 'transparent',
@@ -150,6 +190,7 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
                 <span className="text-[14px] self-center" style={{ color: 'var(--color-ink-muted)' }}>{r.vehicle}</span>
                 <span className="text-[13px] self-center" style={{ color: 'var(--color-ink-muted)' }}>{r.service}</span>
                 <span className="self-center"><StatusBadge status={r.status} /></span>
+                <span className="self-center">{paymentBadge(r.payment_status)}</span>
                 <span className="text-[13px] self-center" style={{ color: 'var(--color-ink-subtle)' }}>
                   {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
@@ -161,7 +202,7 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
         {/* Detail panel */}
         {detail && (
           <div
-            className="w-[340px] shrink-0 self-start sticky top-[100px] hidden lg:flex flex-col gap-5"
+            className="w-[360px] shrink-0 self-start sticky top-[100px] hidden lg:flex flex-col gap-5"
             style={{
               background: 'var(--color-surface-1)',
               border: '1px solid var(--color-hairline)',
@@ -183,7 +224,10 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
             </div>
             <div>
               <h3 className="m-0 mb-1 text-[20px] font-semibold" style={{ color: 'var(--color-ink)' }}>{detail.name}</h3>
-              <StatusBadge status={detail.status} />
+              <div className="flex gap-2 items-center">
+                <StatusBadge status={detail.status} />
+                {paymentBadge(detail.payment_status)}
+              </div>
             </div>
             {([
               ['Vehicle', detail.vehicle],
@@ -204,6 +248,119 @@ export function AppointmentRequestsList({ requests }: { requests: Request[] }) {
                 <p className="m-0 text-[14px] leading-[1.5]" style={{ color: 'var(--color-ink-muted)' }}>{detail.notes}</p>
               </div>
             )}
+
+            {/* Deposit section */}
+            <div style={{ borderTop: '1px solid var(--color-hairline)', paddingTop: '16px' }}>
+              <span className="text-[11px] font-semibold uppercase tracking-[1px] block mb-3" style={{ color: 'var(--color-ink-subtle)' }}>Deposit</span>
+
+              {detail.payment_status === 'paid' && detail.deposit_cents && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[14px] font-medium" style={{ color: '#22c55e' }}>Deposit paid: {formatCents(detail.deposit_cents)}</span>
+                  {detail.estimate_cents && (
+                    <span className="text-[13px]" style={{ color: 'var(--color-ink-muted)' }}>Job estimate: {formatCents(detail.estimate_cents)}</span>
+                  )}
+                </div>
+              )}
+
+              {detail.payment_status === 'pending' && detail.stripe_payment_link_url && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-[13px]" style={{ color: '#eab308' }}>Deposit link sent — awaiting payment</span>
+                  {detail.deposit_cents && (
+                    <span className="text-[13px]" style={{ color: 'var(--color-ink-muted)' }}>Amount: {formatCents(detail.deposit_cents)}</span>
+                  )}
+                  <a
+                    href={detail.stripe_payment_link_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[13px] underline"
+                    style={{ color: 'var(--color-ink-muted)' }}
+                  >
+                    View payment link
+                  </a>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(detail.stripe_payment_link_url!)}
+                    className="cursor-pointer text-[12px] py-1.5"
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      background: 'var(--color-surface-2)',
+                      color: 'var(--color-ink-muted)',
+                      border: '1px solid var(--color-hairline)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                  >
+                    Copy link to clipboard
+                  </button>
+                </div>
+              )}
+
+              {detail.payment_status === 'none' && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium" style={{ color: 'var(--color-ink-muted)' }}>Job estimate (CAD)</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px]" style={{ color: 'var(--color-ink-subtle)' }}>$</span>
+                        <input
+                          type="number"
+                          min="1"
+                          step="0.01"
+                          value={estimate}
+                          onChange={(e) => setEstimate(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full outline-none"
+                          style={{
+                            background: 'var(--color-surface-2)',
+                            color: 'var(--color-ink)',
+                            fontSize: '14px',
+                            padding: '8px 12px 8px 24px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--color-hairline-strong)',
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {estimate && parseFloat(estimate) > 0 && (
+                      <span className="text-[12px]" style={{ color: 'var(--color-ink-subtle)' }}>
+                        25% deposit: ${(parseFloat(estimate) * 0.25).toFixed(2)} CAD
+                      </span>
+                    )}
+                  </div>
+
+                  {depositResult?.error && (
+                    <div className="text-[13px] py-2 px-3 rounded-[var(--radius-sm)]" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>
+                      {depositResult.error}
+                    </div>
+                  )}
+
+                  {depositResult?.url && (
+                    <div className="flex flex-col gap-2">
+                      <div className="text-[13px] py-2 px-3 rounded-[var(--radius-sm)]" style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}>
+                        Deposit link created: ${depositResult.amount}
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(depositResult.url!)}
+                        className="cursor-pointer text-[12px] py-1.5"
+                        style={{
+                          fontFamily: 'var(--font-sans)',
+                          background: 'var(--color-surface-2)',
+                          color: 'var(--color-ink-muted)',
+                          border: '1px solid var(--color-hairline)',
+                          borderRadius: 'var(--radius-sm)',
+                        }}
+                      >
+                        Copy link to clipboard
+                      </button>
+                    </div>
+                  )}
+
+                  <Button size="sm" onClick={handleSendDeposit} disabled={sendingDeposit || !estimate || parseFloat(estimate) <= 0}>
+                    {sendingDeposit ? 'Creating...' : 'Generate Deposit Link'}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Status update */}
             <div className="flex flex-col gap-2 mt-1">
               <span className="text-[11px] font-semibold uppercase tracking-[1px] block" style={{ color: 'var(--color-ink-subtle)' }}>Update Status</span>
               <div className="flex flex-wrap gap-1.5">
