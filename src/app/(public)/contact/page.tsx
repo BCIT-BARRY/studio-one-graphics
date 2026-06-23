@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { FormField } from '@/components/ui/FormField';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -116,34 +117,3 @@ export default function ContactPage() {
   );
 }
 
-function FormField({
-  label,
-  placeholder,
-  type = 'text',
-  required = false,
-}: {
-  label: string;
-  placeholder: string;
-  type?: string;
-  required?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[14px] font-semibold" style={{ color: 'var(--color-ink)' }}>{label}</label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        required={required}
-        className="outline-none"
-        style={{
-          background: 'var(--color-surface-1)',
-          color: 'var(--color-ink)',
-          fontSize: '15px',
-          padding: '12px 14px',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--color-hairline-strong)',
-        }}
-      />
-    </div>
-  );
-}

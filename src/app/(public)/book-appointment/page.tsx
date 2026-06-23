@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { FormField } from '@/components/ui/FormField';
 import { services } from '@/data/mock';
+import { submitBooking } from '@/app/actions/booking';
 
 export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [state, action, pending] = useActionState(submitBooking, undefined);
 
   const availableDates = useMemo(() => {
     const dates: Date[] = [];
@@ -30,9 +32,17 @@ export default function BookAppointmentPage() {
     return { day: days[d.getDay()], date: d.getDate(), month: months[d.getMonth()] };
   };
 
-  const selectedServiceData = services.find((s) => s.id === selectedService);
+  const toISODate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
-  if (submitted) {
+  const selectedServiceData = services.find((s) => s.id === selectedService);
+  const serviceLabel = selectedServiceData?.title || 'Not Sure / Need Recommendation';
+
+  if (state?.success) {
     return (
       <div>
         <section className="max-w-[var(--container-max)] mx-auto" style={{ padding: '100px 32px 96px' }}>
@@ -245,22 +255,34 @@ export default function BookAppointmentPage() {
         <section className="max-w-[var(--container-max)] mx-auto" style={{ padding: '0 32px 96px' }}>
           <form
             className="grid grid-cols-1 md:grid-cols-2 gap-16"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSubmitted(true);
-            }}
+            action={action}
           >
+            <input type="hidden" name="service" value={serviceLabel} />
+            <input type="hidden" name="preferred_date" value={selectedDate !== null ? toISODate(availableDates[selectedDate]) : ''} />
+            <input type="hidden" name="preferred_time" value={selectedTime || ''} />
+
             {/* Form */}
             <div className="flex flex-col gap-5">
               <h3 className="m-0 text-[18px] font-semibold" style={{ color: 'var(--color-ink)' }}>Your details</h3>
+
+              {state?.error && (
+                <div
+                  className="text-[14px] py-3 px-4 rounded-[var(--radius-sm)]"
+                  style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}
+                >
+                  {state.error}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FieldInput label="Full name" placeholder="Your name" required />
-                <FieldInput label="Phone" placeholder="(604) 555-0000" type="tel" />
+                <FormField label="Full name" name="name" placeholder="Your name" required />
+                <FormField label="Phone" name="phone" placeholder="(604) 555-0000" type="tel" />
               </div>
-              <FieldInput label="Email" placeholder="you@email.com" type="email" required />
+              <FormField label="Email" name="email" placeholder="you@email.com" type="email" required />
               <div className="flex flex-col gap-1.5">
                 <label className="text-[14px] font-semibold" style={{ color: 'var(--color-ink)' }}>Vehicle details</label>
                 <textarea
+                  name="vehicle"
                   placeholder="Year, make, model, color — anything that helps us prepare..."
                   required
                   className="resize-y outline-none"
@@ -278,6 +300,7 @@ export default function BookAppointmentPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-[14px] font-semibold" style={{ color: 'var(--color-ink)' }}>Project details / notes</label>
                 <textarea
+                  name="notes"
                   placeholder="Anything else you'd like us to know..."
                   className="resize-y outline-none"
                   style={{
@@ -305,7 +328,7 @@ export default function BookAppointmentPage() {
                   padding: 'var(--space-lg)',
                 }}
               >
-                <SummaryRow label="Service" value={selectedServiceData?.title || 'Not Sure / Need Recommendation'} />
+                <SummaryRow label="Service" value={serviceLabel} />
                 <div className="h-px" style={{ background: 'var(--color-hairline)' }} />
                 <SummaryRow
                   label="Date"
@@ -330,33 +353,13 @@ export default function BookAppointmentPage() {
             {/* Actions */}
             <div className="flex justify-between md:col-span-2 mt-4">
               <Button variant="ghost" type="button" onClick={() => setStep(2)}>Back</Button>
-              <Button size="lg" type="submit">Confirm Appointment</Button>
+              <Button size="lg" type="submit" disabled={pending}>
+                {pending ? 'Submitting...' : 'Confirm Appointment'}
+              </Button>
             </div>
           </form>
         </section>
       )}
-    </div>
-  );
-}
-
-function FieldInput({ label, placeholder, type = 'text', required = false }: { label: string; placeholder: string; type?: string; required?: boolean }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[14px] font-semibold" style={{ color: 'var(--color-ink)' }}>{label}</label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        required={required}
-        className="outline-none"
-        style={{
-          background: 'var(--color-surface-1)',
-          color: 'var(--color-ink)',
-          fontSize: '15px',
-          padding: '12px 14px',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--color-hairline-strong)',
-        }}
-      />
     </div>
   );
 }
