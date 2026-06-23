@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { sendBookingConfirmation, sendAdminBookingAlert } from '@/lib/email';
 
 export async function submitBooking(_prevState: unknown, formData: FormData) {
   const name = (formData.get('name') as string)?.trim();
@@ -32,6 +33,10 @@ export async function submitBooking(_prevState: unknown, formData: FormData) {
   if (error) {
     return { error: 'Something went wrong. Please try again.' };
   }
+
+  const emailData = { name, email, phone, vehicle, service, preferredDate, preferredTime, notes };
+  sendBookingConfirmation(email, emailData);
+  sendAdminBookingAlert(emailData);
 
   return { success: true };
 }

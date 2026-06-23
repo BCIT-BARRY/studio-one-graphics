@@ -123,10 +123,31 @@ export async function updateProjectStatus(id: string, status: string, progress: 
 
 // ── Gallery ───────────────────────────────────────────────────────────
 
+export async function uploadGalleryImage(formData: FormData) {
+  const supabase = await createClient();
+  const file = formData.get('file') as File;
+  if (!file || file.size === 0) return { error: 'No file selected.' };
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const allowed = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+  if (!allowed.includes(ext)) return { error: 'Only JPG, PNG, WebP, or AVIF files are supported.' };
+  if (file.size > 10 * 1024 * 1024) return { error: 'File must be under 10 MB.' };
+
+  const path = `gallery/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from('gallery')
+    .upload(path, file, { contentType: file.type });
+
+  if (uploadError) return { error: 'Failed to upload image.' };
+
+  const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(path);
+
+  return { success: true, url: urlData.publicUrl };
+}
+
 export async function addGalleryItem(formData: FormData) {
   const supabase = await createClient();
 
-  // Get the next display_order
   const { data: existing } = await supabase
     .from('gallery_items')
     .select('display_order')
@@ -148,6 +169,7 @@ export async function addGalleryItem(formData: FormData) {
   if (error) return { error: 'Failed to add gallery item.' };
 
   revalidatePath('/admin/gallery');
+  revalidatePath('/gallery');
   return { success: true };
 }
 
