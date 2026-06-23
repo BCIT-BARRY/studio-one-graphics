@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
+import { submitContact } from '@/app/actions/contact';
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const [state, action, pending] = useActionState(submitContact, undefined);
 
-  if (submitted) {
+  if (state?.success) {
     return (
       <div>
         <section className="max-w-[var(--container-max)] mx-auto" style={{ padding: '100px 32px 96px' }}>
@@ -58,19 +59,25 @@ export default function ContactPage() {
         {/* Form */}
         <form
           className="flex flex-col gap-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSubmitted(true);
-          }}
+          action={action}
         >
+          {state?.error && (
+            <div
+              className="text-[14px] py-3 px-4 rounded-[var(--radius-sm)]"
+              style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}
+            >
+              {state.error}
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Full name" placeholder="Your name" required />
-            <FormField label="Phone" placeholder="(604) 555-0000" type="tel" />
+            <FormField label="Full name" name="name" placeholder="Your name" required />
+            <FormField label="Phone" name="phone" placeholder="(604) 555-0000" type="tel" />
           </div>
-          <FormField label="Email" placeholder="you@email.com" type="email" required />
+          <FormField label="Email" name="email" placeholder="you@email.com" type="email" required />
           <div className="flex flex-col gap-1.5">
             <label className="text-[14px] font-semibold" style={{ color: 'var(--color-ink)' }}>Message</label>
             <textarea
+              name="message"
               placeholder="Tell us about your project or ask a question..."
               required
               rows={5}
@@ -86,8 +93,8 @@ export default function ContactPage() {
               }}
             />
           </div>
-          <Button fullWidth size="lg" type="submit">
-            Send Message
+          <Button fullWidth size="lg" type="submit" disabled={pending}>
+            {pending ? 'Sending...' : 'Send Message'}
           </Button>
         </form>
 
