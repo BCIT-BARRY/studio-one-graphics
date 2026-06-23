@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
+import { FilterTabs } from '@/components/ui/FilterTabs';
 import { mockGalleryItems } from '@/data/mock';
 
 const categories = ['All', 'Vinyl Wraps', 'Paint Protection Film (PPF)', 'Ceramic Coatings', 'Decals & Graphics', 'Commercial Wraps'];
@@ -22,27 +23,8 @@ export default function GalleryManagerPage() {
         <Button size="sm">+ Upload Photos</Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-1 mb-5 flex-wrap">
-        {categories.map((c) => (
-          <button
-            key={c}
-            onClick={() => setFilter(c)}
-            className="cursor-pointer transition-all duration-[120ms]"
-            style={{
-              padding: '6px 14px',
-              fontSize: '12px',
-              fontWeight: 500,
-              fontFamily: 'var(--font-sans)',
-              background: filter === c ? 'var(--color-surface-3)' : 'transparent',
-              color: filter === c ? 'var(--color-ink)' : 'var(--color-ink-subtle)',
-              border: `1px solid ${filter === c ? 'rgba(255,255,255,0.14)' : 'var(--color-hairline)'}`,
-              borderRadius: 'var(--radius-sm)',
-            }}
-          >
-            {c}
-          </button>
-        ))}
+      <div className="mb-5">
+        <FilterTabs options={categories} value={filter} onChange={setFilter} />
       </div>
 
       {/* Grid */}
