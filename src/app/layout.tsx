@@ -8,8 +8,42 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Studio One Graphics — Premium Automotive Wraps, Protection & Graphics',
-  description: 'Premium automotive wraps, paint protection film, ceramic coatings, and custom graphics in Surrey, BC. By appointment only.',
+  metadataBase: new URL('https://studioonegraphics.up.railway.app'),
+  title: {
+    default: 'Studio One Graphics',
+    template: '%s | Studio One Graphics',
+  },
+  description:
+    'Premium automotive wraps, paint protection film, ceramic coatings, and window tinting in Surrey, BC. By appointment only.',
+  openGraph: {
+    siteName: 'Studio One Graphics',
+    locale: 'en_CA',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'AutoRepair',
+  name: 'Studio One Graphics',
+  description:
+    'Premium automotive wraps, paint protection film, ceramic coatings, and window tinting in Surrey, BC.',
+  url: 'https://studioonegraphics.up.railway.app',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Surrey',
+    addressRegion: 'BC',
+    addressCountry: 'CA',
+  },
+  openingHoursSpecification: {
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    opens: '09:00',
+    closes: '18:00',
+  },
 };
 
 export default function RootLayout({
@@ -19,7 +53,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} antialiased`}>
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
