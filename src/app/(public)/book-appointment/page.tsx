@@ -3,12 +3,6 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { services } from '@/data/mock';
-import type { ServiceOption } from '@/types';
-
-const serviceOptions: ServiceOption[] = [
-  ...services.map((s) => s.title),
-  'Not Sure / Need Recommendation',
-];
 
 export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
