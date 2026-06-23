@@ -1,12 +1,18 @@
 import Image from 'next/image';
-import { mockGalleryItems } from '@/data/mock';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata = {
-  title: 'Gallery — Studio One Graphics',
+  title: 'Gallery',
 };
 
-export default function GalleryPage() {
-  const visibleItems = mockGalleryItems.filter((g) => g.visible);
+export default async function GalleryPage() {
+  const supabase = await createClient();
+  const { data: items } = await supabase
+    .from('gallery_items')
+    .select('id, image_url, title, description, category')
+    .order('display_order', { ascending: true });
+
+  const visibleItems = items ?? [];
 
   return (
     <div>
@@ -32,33 +38,48 @@ export default function GalleryPage() {
       </section>
 
       <section className="max-w-[var(--container-max)] mx-auto" style={{ padding: '24px 32px 96px' }}>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {visibleItems.map((p, i) => (
-            <div
-              key={p.id}
-              className="overflow-hidden transition-[border-color] duration-150 hover:border-[rgba(255,255,255,0.14)]"
-              style={{
-                background: 'var(--color-surface-1)',
-                border: '1px solid var(--color-hairline)',
-                borderRadius: 'var(--radius-lg)',
-              }}
-            >
+        {visibleItems.length === 0 ? (
+          <div
+            className="text-center py-20 px-8"
+            style={{
+              background: 'var(--color-surface-1)',
+              border: '1px solid var(--color-hairline)',
+              borderRadius: 'var(--radius-lg)',
+            }}
+          >
+            <p className="m-0 text-[17px]" style={{ color: 'var(--color-ink-muted)' }}>
+              Gallery coming soon. Check back for our latest work.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {visibleItems.map((p, i) => (
               <div
-                className="relative overflow-hidden"
+                key={p.id}
+                className="overflow-hidden transition-[border-color] duration-150 hover:border-[rgba(255,255,255,0.14)]"
                 style={{
-                  aspectRatio: i === 0 || i === 5 ? '3/2' : '4/3',
-                  background: 'var(--color-surface-2)',
+                  background: 'var(--color-surface-1)',
+                  border: '1px solid var(--color-hairline)',
+                  borderRadius: 'var(--radius-lg)',
                 }}
               >
-                <Image src={p.image} alt={p.title} fill className="object-cover" />
+                <div
+                  className="relative overflow-hidden"
+                  style={{
+                    aspectRatio: i === 0 || i === 5 ? '3/2' : '4/3',
+                    background: 'var(--color-surface-2)',
+                  }}
+                >
+                  <Image src={p.image_url} alt={p.title} fill className="object-cover" />
+                </div>
+                <div className="p-3 sm:p-4">
+                  <h3 className="m-0 text-[14px] sm:text-[15px] font-semibold" style={{ color: 'var(--color-ink)' }}>{p.title}</h3>
+                  <p className="m-0 mt-0.5 text-[12px] sm:text-[13px]" style={{ color: 'var(--color-ink-muted)' }}>{p.description}</p>
+                </div>
               </div>
-              <div className="p-3 sm:p-4">
-                <h3 className="m-0 text-[14px] sm:text-[15px] font-semibold" style={{ color: 'var(--color-ink)' }}>{p.title}</h3>
-                <p className="m-0 mt-0.5 text-[12px] sm:text-[13px]" style={{ color: 'var(--color-ink-muted)' }}>{p.caption}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
