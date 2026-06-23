@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { sendContactAlert } from '@/lib/email';
 
 export async function submitContact(_prevState: unknown, formData: FormData) {
   const name = (formData.get('name') as string)?.trim();
@@ -24,6 +25,8 @@ export async function submitContact(_prevState: unknown, formData: FormData) {
   if (error) {
     return { error: 'Something went wrong. Please try again.' };
   }
+
+  sendContactAlert({ name, email, phone, message });
 
   return { success: true };
 }
