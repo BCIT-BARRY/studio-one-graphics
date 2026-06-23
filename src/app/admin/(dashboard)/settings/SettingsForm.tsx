@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { updateBusinessSettings } from '@/app/actions/admin';
 
@@ -108,7 +107,8 @@ export function SettingsForm({ settings }: { settings: BusinessSettings | null }
             className="flex flex-col gap-3"
             style={{ background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)', padding: '24px' }}
           >
-            <Image src="/images/logo-full-white.png" alt="Studio One" width={120} height={20} className="h-5 w-auto" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo-full-white.png" alt="Studio One" style={{ height: '20px', width: 'auto', alignSelf: 'flex-start' }} />
             <div className="flex flex-col gap-1 text-[13px]" style={{ color: 'var(--color-ink-muted)' }}>
               <span>{form.address || 'No address set'}</span>
               <span>{form.phone || 'No phone set'}</span>
