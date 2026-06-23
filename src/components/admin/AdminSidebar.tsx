@@ -4,19 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { mockAppointmentRequests } from '@/data/mock';
 import { logout } from '@/app/actions/auth';
 
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard', href: '/admin', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4' },
-  { id: 'appointment-requests', label: 'Appointment Requests', href: '/admin/appointment-requests', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', badge: mockAppointmentRequests.filter((r) => r.status === 'New').length },
-  { id: 'appointments', label: 'Appointments', href: '/admin/appointments', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-  { id: 'projects', label: 'Projects', href: '/admin/projects', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
-  { id: 'gallery', label: 'Gallery Manager', href: '/admin/gallery', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
-  { id: 'settings', label: 'Settings', href: '/admin/settings', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
-];
-
-export function AdminSidebar() {
+export function AdminSidebar({ userName, userInitials, newRequestCount = 0 }: { userName: string; userInitials: string; newRequestCount?: number }) {
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', href: '/admin', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4' },
+    { id: 'appointment-requests', label: 'Appointment Requests', href: '/admin/appointment-requests', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', badge: newRequestCount },
+    { id: 'appointments', label: 'Appointments', href: '/admin/appointments', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+    { id: 'projects', label: 'Projects', href: '/admin/projects', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+    { id: 'gallery', label: 'Gallery Manager', href: '/admin/gallery', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
+    { id: 'settings', label: 'Settings', href: '/admin/settings', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
+  ];
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -141,10 +139,10 @@ export function AdminSidebar() {
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0"
                   style={{ background: 'var(--color-surface-3)', color: 'var(--color-ink)' }}
                 >
-                  BB
+                  {userInitials}
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-[13px] font-medium truncate" style={{ color: 'var(--color-ink)' }}>Barry Bui</span>
+                  <span className="block text-[13px] font-medium truncate" style={{ color: 'var(--color-ink)' }}>{userName}</span>
                   <span className="block text-[11px]" style={{ color: 'var(--color-ink-subtle)' }}>Owner</span>
                 </div>
               </div>
@@ -267,10 +265,10 @@ export function AdminSidebar() {
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0"
                   style={{ background: 'var(--color-surface-3)', color: 'var(--color-ink)' }}
                 >
-                  BB
+                  {userInitials}
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-[13px] font-medium truncate" style={{ color: 'var(--color-ink)' }}>Barry Bui</span>
+                  <span className="block text-[13px] font-medium truncate" style={{ color: 'var(--color-ink)' }}>{userName}</span>
                   <span className="block text-[11px]" style={{ color: 'var(--color-ink-subtle)' }}>Owner</span>
                 </div>
               </div>
@@ -291,7 +289,7 @@ export function AdminSidebar() {
                 className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold"
                 style={{ background: 'var(--color-surface-3)', color: 'var(--color-ink)' }}
               >
-                BB
+                {userInitials}
               </div>
               <button
                 onClick={handleLogout}

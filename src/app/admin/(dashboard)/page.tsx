@@ -1,27 +1,20 @@
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { createClient } from '@/lib/supabase/server';
+import { getAppointmentRequests, getDashboardStats } from '@/lib/supabase/queries';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient();
-  const { data: requests } = await supabase
-    .from('appointment_requests')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  const allRequests = requests || [];
-  const newRequests = allRequests.filter((r) => r.status === 'New').length;
-  const contacted = allRequests.filter((r) => r.status === 'Contacted').length;
-  const confirmed = allRequests.filter((r) => r.status === 'Confirmed').length;
-  const total = allRequests.length;
+  const [allRequests, dashStats] = await Promise.all([
+    getAppointmentRequests(),
+    getDashboardStats(),
+  ]);
 
   const stats = [
-    { label: 'New Requests', value: newRequests, href: '/admin/appointment-requests' },
-    { label: 'Contacted', value: contacted, href: '/admin/appointment-requests' },
-    { label: 'Confirmed', value: confirmed, href: '/admin/appointment-requests' },
-    { label: 'Total Requests', value: total, href: '/admin/appointment-requests' },
+    { label: 'New Requests', value: dashStats.requests.new, href: '/admin/appointment-requests' },
+    { label: 'Active Projects', value: dashStats.projects.active, href: '/admin/projects' },
+    { label: 'Gallery Items', value: dashStats.gallery.total, href: '/admin/gallery' },
+    { label: 'Unread Messages', value: dashStats.messages.unread, href: '/admin' },
   ];
 
   return (

@@ -1,12 +1,27 @@
-'use client';
-
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 
-export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin';
+  const initials = fullName
+    .split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const { count } = await supabase
+    .from('appointment_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'New');
+
   return (
     <div className="flex min-h-screen">
-      <AdminSidebar />
+      <AdminSidebar userName={fullName} userInitials={initials} newRequestCount={count ?? 0} />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header
