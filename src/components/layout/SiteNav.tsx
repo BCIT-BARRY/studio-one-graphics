@@ -108,12 +108,12 @@ export function SiteNav() {
               href={l.href}
               className="text-[28px] font-semibold tracking-[-0.5px]"
               style={{ color: 'var(--color-ink)' }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={() => setMobileOpen(false)}
             >
               {l.label}
             </Link>
           ))}
-          <Link href="/book-appointment" onClick={(e) => e.stopPropagation()}>
+          <Link href="/book-appointment" onClick={() => setMobileOpen(false)}>
             <Button size="lg">Book Appointment</Button>
           </Link>
         </div>
