@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { FilterTabs } from '@/components/ui/FilterTabs';
 import { mockProjects } from '@/data/mock';
 import type { ProjectStatus } from '@/types';
 
@@ -23,27 +24,8 @@ export default function ProjectsPage() {
         <Button size="sm">+ New Project</Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-1 mb-5 flex-wrap">
-        {statuses.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className="cursor-pointer transition-all duration-[120ms]"
-            style={{
-              padding: '6px 14px',
-              fontSize: '12px',
-              fontWeight: 500,
-              fontFamily: 'var(--font-sans)',
-              background: filter === s ? 'var(--color-surface-3)' : 'transparent',
-              color: filter === s ? 'var(--color-ink)' : 'var(--color-ink-subtle)',
-              border: `1px solid ${filter === s ? 'rgba(255,255,255,0.14)' : 'var(--color-hairline)'}`,
-              borderRadius: 'var(--radius-sm)',
-            }}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-5">
+        <FilterTabs options={statuses} value={filter} onChange={setFilter} />
       </div>
 
       {/* Cards */}
